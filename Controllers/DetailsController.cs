@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Pager.Data;
+using Pager.DTOs;
 using Pager.Model;
 using Pager.Model.Entities;
+using Pager.Repositories;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Cache;
 
@@ -10,81 +14,229 @@ namespace Pager.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
+    
     public class DetailsController : ControllerBase
     {
         private readonly ApplicationDbContext dbContext;
+        private readonly IDetailsRepository detailsRepository;
 
-        public DetailsController(ApplicationDbContext dbContext)
+        public DetailsController(ApplicationDbContext dbContext, IDetailsRepository detailsRepository)
         {
             this.dbContext = dbContext;
+            this.detailsRepository = detailsRepository;
         }
+        // GET ALL DETAILS
         [HttpGet]
-     public IActionResult GetAllDetails()
+     public async Task <IActionResult> GetAllDetails()
         {
-           var alldetails=  dbContext.GetDetails.ToList();
-            return Ok(alldetails);
+           
+              //get data from database - Domain model
+                var detailsDomain = await detailsRepository.GetAllDetailsAsync();
+
+                // Map Domain models to DTO
+
+                var detailsDto = new List<DetailsDTO>();
+
+                foreach (var detailDomain in detailsDomain)
+                {
+                    detailsDto.Add(new DetailsDTO()
+                    {
+                        Id = detailDomain.Id,
+                        Name = detailDomain.Name,
+                        Age = detailDomain.Age,
+                        Email = detailDomain.Email,
+                        Phone = detailDomain.Phone,
+                        Salary = detailDomain.Salary,
+
+                    });
+
+                    
+                }
+                  // returns DTO
+                   return Ok(detailsDto);
+            
+           
         }
 
+        // GET SINGLE DETAILS(GET DETAILS BY ID)
         [HttpGet]
         [Route("{id:Guid}")]
-        public IActionResult GetDetailsById(Guid id) 
+        public async Task <IActionResult> GetDetailsById([FromRoute] Guid id) 
         {
-           var Details = dbContext.GetDetails.Find(id);
-            if(Details is null)
-            {
-                return NotFound();
+            try
+                //Get Details Domain model from Database
+            {   var DetailsDomain = await detailsRepository.GetDetailsByIdAsync(id);    
+               
+                if (DetailsDomain is null)
+                {
+                    return NotFound();
+                }
+
+                //Map/Convert  Details Domain Model To Details DTO
+
+                var detailsDto = new DetailsDTO()
+                {
+                    Id= DetailsDomain.Id,
+                    Name = DetailsDomain.Name,  
+                    Age = DetailsDomain.Age,    
+                    Email = DetailsDomain.Email,    
+                    Phone = DetailsDomain.Phone,
+                    Salary= DetailsDomain.Salary,
+                };
+
+                //return DTO back to client
+                return Ok(detailsDto);
             }
-           return Ok(Details);
-        }
+            catch (Exception)
+            {
 
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error retrieving data from the Database");
+            }
+        }
+        // POST TO CREATE/ADD NEW DETAILS
         [HttpPost]
-        public IActionResult AddDetails( AddDetailsDto addDetailsDto )
+
+        public async Task <IActionResult> CreateDetails([FromBody ] AddDetailsDto addDetailsDto )
 
         {
-            var DetailsEntity = new Details()
+            
+               if(ModelState.IsValid)
             {
-                Email = addDetailsDto.Email,
-                Name = addDetailsDto.Name,
-                Age = addDetailsDto.Age,
-                Phone = addDetailsDto.Phone,
-                Salary = addDetailsDto.Salary,
-            };
 
-            dbContext .GetDetails.Add(DetailsEntity );
-            dbContext.SaveChanges();
-            return Ok(DetailsEntity);
+                // Map or convert DTO to Domain Model
+                var detailsDomainModel = new Details()
+                {
+                    Email = addDetailsDto.Email,
+                    Name = addDetailsDto.Name,
+                    Age = addDetailsDto.Age,
+                    Phone = addDetailsDto.Phone,
+                    Salary = addDetailsDto.Salary,
+                };
+
+
+                // Use Domain Model to create or add  Details
+
+                detailsDomainModel = await detailsRepository.CreateDetailsAsync(detailsDomainModel);
+
+
+                // Map domain model back to DTO
+
+                var detailDto = new DetailsDTO
+                {
+                    Id = detailsDomainModel.Id,
+                    Name = detailsDomainModel.Name,
+                    Age = detailsDomainModel.Age,
+                    Phone = detailsDomainModel.Phone,
+                    Email = detailsDomainModel.Email,
+                    Salary = detailsDomainModel.Salary,
+
+                };
+                return CreatedAtAction(nameof(GetDetailsById), new { id = detailDto.Id }, detailDto);
+
+            }
+            else
+            {
+                return BadRequest();
+            }
+
+
+
+
+
+
         }
-
+         // Update Details
         [HttpPut]
         [Route("{id:Guid}")]
-        public IActionResult UpdateDetails(Guid id, UpdateDetailsDto updateDetailsDto)
+        public async Task <IActionResult> UpdateDetailsAsync([FromRoute]Guid id, [FromBody] UpdateDetailsDto updateDetailsDto)
         {
-            var DetailInfo= dbContext.GetDetails.Find(id);  
-            if( DetailInfo is null)
+           
+
+               if(ModelState.IsValid)
+            
+                {   //Map DTO to Domain Model
+                    var detailsDomainModel = new Details
+                    {
+                        Name = updateDetailsDto.Name,
+                        Age = updateDetailsDto.Age,
+                        Phone = updateDetailsDto.Phone,
+                        Email = updateDetailsDto.Email,
+                    };
+
+                    // Check if Details exist
+
+                    detailsDomainModel = await detailsRepository.UpdateDetailsAsync(id, detailsDomainModel);
+
+                    if (detailsDomainModel is null)
+                    {
+                        return NotFound();
+                    }
+                    //Map Domain Model backt to DTO
+
+                    var detaildto = new DetailsDTO
+                    {
+                        Id = detailsDomainModel.Id,
+                        Name = detailsDomainModel.Name,
+                        Age = detailsDomainModel.Age,
+                        Salary = detailsDomainModel.Salary,
+                        Email = detailsDomainModel.Email,
+                        Phone = detailsDomainModel.Phone,
+
+                    };
+
+                    //return DTO
+                    return Ok(detaildto);
+                }
+            else
             {
-                return NotFound();
+                return BadRequest(ModelState);
             }
-            DetailInfo.Name = updateDetailsDto.Name;
-            DetailInfo.Age = updateDetailsDto.Age;  
-            DetailInfo.Salary = updateDetailsDto.Salary;
-            DetailInfo.Email = updateDetailsDto.Email;  
-            DetailInfo.Phone = updateDetailsDto.Phone;
-            dbContext .SaveChanges();
-            return Ok( DetailInfo );
+           
+            
+           
+            
+
+               
+            
         }
 
         [HttpDelete]
-        public IActionResult DeleteDetails( Guid id )
-        {
-            var details = dbContext.GetDetails.Find(id);
-            if ( details is null)
-            {
-                return NotFound();  
-            }
-             dbContext.GetDetails.Remove(details);
-             dbContext.SaveChanges();   
-            return Ok();    
 
+        [Route("{id:Guid}")]
+        public async Task <IActionResult> DeleteDetails( [FromRoute] Guid id )
+        {
+            try
+            {    var detailDomainModel= await detailsRepository.DeleteDetailsAsync(id);
+             
+                if (detailDomainModel is null)
+                {
+                    return NotFound();
+                }
+                
+
+                //return deleted details back 
+                //Map Domain Model to DTO
+                var detailDto = new DetailsDTO
+                {
+                    Id = detailDomainModel.Id,
+                    Name = detailDomainModel.Name,
+                    Age = detailDomainModel.Age,
+                    Salary = detailDomainModel.Salary,
+                    Email = detailDomainModel.Email,
+                    Phone = detailDomainModel.Phone,
+
+                };
+                return Ok(detailDto);
+
+
+            }
+            catch (Exception)
+            {
+
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "Error Deleting  contact record ");
+            }
             
         }
     }

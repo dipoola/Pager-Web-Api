@@ -1,13 +1,17 @@
-﻿namespace Pager.Model
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Pager.Model
 {
     public class AddDetailsDto
     {
-
-        public required string Name { get; set; }
+        [Required]
+        [MinLength(10,ErrorMessage = "Name has to be maximum of 10 characters")]
+        [MaxLength(16, ErrorMessage = "Name has to be maximum of 16 characters")] 
+        public  string Name { get; set; }
 
         public required int Age { get; set; }
         public required string Email { get; set; }
         public string? Phone { get; set; }
-        public decimal Salary { get; set; }
+        public int Salary { get; set; }
     }
 }

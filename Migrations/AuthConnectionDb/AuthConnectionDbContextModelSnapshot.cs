@@ -8,10 +8,10 @@ using Pager.Data;
 
 #nullable disable
 
-namespace Pager.Migrations
+namespace Pager.Migrations.AuthConnectionDb
 {
-    [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [DbContext(typeof(AuthConnectionDbContext))]
+    partial class AuthConnectionDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
@@ -47,6 +47,22 @@ namespace Pager.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "19414b0a-2cf3-4e59-9778-140e04d19cbb",
+                            ConcurrencyStamp = "19414b0a-2cf3-4e59-9778-140e04d19cbb",
+                            Name = "Reader",
+                            NormalizedName = "READER"
+                        },
+                        new
+                        {
+                            Id = "6ed031b6-f639-495d-b89c-fe66bbf9ff3d",
+                            ConcurrencyStamp = "6ed031b6-f639-495d-b89c-fe66bbf9ff3d",
+                            Name = "Writer",
+                            NormalizedName = "WRITER"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -218,78 +234,6 @@ namespace Pager.Migrations
                     b.HasKey("UserId", "LoginProvider", "Name");
 
                     b.ToTable("AspNetUserTokens", (string)null);
-                });
-
-            modelBuilder.Entity("Pager.Model.Domain.Region", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Email")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Location")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Regions");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("91fe5c8d-deb1-4403-a9e1-f0017b933609"),
-                            Email = "AlfredBonkey@gmail.com",
-                            Location = "Ohio",
-                            Name = "Alfred Bonkey",
-                            Phone = "9378456112"
-                        });
-                });
-
-            modelBuilder.Entity("Pager.Model.Entities.Details", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Age")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Phone")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Salary")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("GetDetails");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("7ea29bba-45c9-4ddf-888d-71ce369e87ab"),
-                            Age = 24,
-                            Email = "Kamalajones@gmail.com",
-                            Name = "Kamaljones",
-                            Salary = 1200
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
